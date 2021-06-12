@@ -15,37 +15,51 @@ namespace ReportingIssue
 {
     public partial class Form1 : DevExpress.XtraEditors.XtraForm
     {
+        public List<ReportEntryExtended<DateTime, double, string, bool>> HourData { get; set; }
         public Form1()
         {
             InitializeComponent();
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private static void ShowReport(List<ReportEntryExtended<DateTime, double, string, bool>> collisionsByHour)
         {
-            var repData = GetData();
+            var repData = new List<SafetyAnnualReport>
+            { new SafetyAnnualReport
+            {
+                CollisionsByHour =collisionsByHour
+            } };
             var report = new XtraReport1();
             report.DataSource = repData;
             ReportPrintTool tool = new ReportPrintTool(report);
             tool.ShowPreview();
         }
 
-        public List<SafetyAnnualReport> GetData()
+        private void Form1_Load(object sender, EventArgs e)
         {
-            var collisionsByHour = JsonTools.ReadJsonFile<List<ReportEntryExtended<DateTime, double, string, bool>>>
+            HourData = JsonTools.ReadJsonFile<List<ReportEntryExtended<DateTime, double, string, bool>>>
                 (Path.Combine(Environment.CurrentDirectory, "CollisionsByHour.json"));
+            gridControl1.DataSource = HourData;
+            
+        }
 
-            var FatalInjury = collisionsByHour.Where(x =>
-            (x.Filter != "Fatal" || x.Filter == "Injury") & x.AdditionalInfo == false).ToList();
+        private void btnFilterbyReport_Click(object sender, EventArgs e)
+        {
+            var data = HourData;
+            ShowReport(data);
+        }
 
-            var totalNoAditional = collisionsByHour.Where(x => x.AdditionalInfo == false).ToList();
+        private void btnLinqFatalInjury_Click(object sender, EventArgs e)
+        {
+            var data = HourData.Where(x=>x.AdditionalInfo == false && 
+            (x.Filter =="Fatal" || x.Filter == "Injury")).ToList();
+            ShowReport(data);
+        }
 
-
-            return new List<SafetyAnnualReport>
-            { new SafetyAnnualReport
-            {
-                CollisionsByHour =totalNoAditional
-            }
-        };
+        private void btnLinqAdFalse_Click(object sender, EventArgs e)
+        {
+            var data = HourData.Where(x => x.AdditionalInfo == false).ToList();
+            ShowReport(data);
         }
     }
+    
 }
